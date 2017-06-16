@@ -1,4 +1,4 @@
-package ru.fearofcode.learn.io;
+package ru.fearofcode.learn.io.file;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -12,12 +12,16 @@ public class BufferedFileInput {
 
         FileInputStream isFile = null;
         BufferedInputStream buff = null;
+        byte array[] = new byte[Settings.interactional];
         try {
             isFile = new FileInputStream(Settings.nameFile);
             buff = new BufferedInputStream(isFile);
-            for (int i = 0; i < Settings.interactional; i++){
-                System.out.print(buff.read());
-            }
+            buff.read(array);
+            System.out.println("I finished read in array");
+
+            /*for (int i = 0; i < Settings.interactional; i++){
+                System.out.print(array[i]);
+            }*/
         }catch(Exception e){
             System.out.println("\nCould not read file: " + e.toString());
         }finally{

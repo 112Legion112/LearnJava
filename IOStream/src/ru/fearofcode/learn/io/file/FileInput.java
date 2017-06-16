@@ -1,4 +1,4 @@
-package ru.fearofcode.learn.io;
+package ru.fearofcode.learn.io.file;
 
 import java.io.FileInputStream;
 /**
