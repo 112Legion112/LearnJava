@@ -8,20 +8,12 @@ public class FileInput {
     public static void main(String[] args) {
         long timeStart = System.currentTimeMillis();
 
-        FileInputStream isFile = null;
-        try {
-            isFile = new FileInputStream(Settings.nameFile);
+        try (FileInputStream isFile = new FileInputStream(Settings.nameFile);){
             for (int i = 0; i < Settings.interactional; i++){
                 System.out.print(isFile.read());
             }
         }catch(Exception e){
             System.out.println("\nCould not read in file: " + e.toString());
-        }finally{
-            try{
-                isFile.close();
-            }catch(Exception e){
-                e.printStackTrace();
-            }
         }
 
         long timeFinish = System.currentTimeMillis();

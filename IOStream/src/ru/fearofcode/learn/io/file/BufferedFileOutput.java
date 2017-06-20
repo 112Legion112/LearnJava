@@ -11,12 +11,11 @@ public class BufferedFileOutput {
 
         long timeStart = System.currentTimeMillis();
 
-        FileOutputStream osFile = null;
-        BufferedOutputStream buff = null;
 
-        try {
-            osFile = new FileOutputStream(Settings.nameFile);
-            buff = new BufferedOutputStream(osFile);
+
+        try (FileOutputStream osFile = new FileOutputStream(Settings.nameFile);
+            BufferedOutputStream buff = new BufferedOutputStream(osFile)){
+
             byte array[] = new byte[Settings.interactional];
             for (int i = 0; i < Settings.interactional; i++){
                 array[i] = (byte)(Math.random() * 255);
@@ -24,12 +23,6 @@ public class BufferedFileOutput {
             buff.write(array);
         }catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            try {
-                osFile.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 }
