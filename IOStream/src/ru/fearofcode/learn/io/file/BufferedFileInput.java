@@ -27,5 +27,6 @@ public class BufferedFileInput {
 
         long timeFinish = System.currentTimeMillis();
         System.out.println("\nTime of work " + BufferedFileInput.class + " " + (timeFinish - timeStart) / 1000 + " second");
+
     }
 }
