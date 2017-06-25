@@ -12,45 +12,37 @@ import java.net.Socket;
  */
 public class StockQuoteServer {
     public static void main(String[] args) {
-        ServerSocket serverSocket = null;
-        Socket client = null;
-        BufferedReader inbound = null;
-        OutputStream outbound = null;
-        try
+        Socket client;
+
+        try(ServerSocket serverSocket = new ServerSocket(3001))
         {
             // Create a server socket
-            serverSocket = new ServerSocket(3000);
+
             System.out.println("Waiting for a quote request...");
             while (true)
             {
                 // Wait for a request
                 client = serverSocket.accept();
+                try(    BufferedReader inbound = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                        OutputStream outbound = client.getOutputStream();) {
+                    // Get the streams
 
-                // Get the streams
-                inbound = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                outbound = client.getOutputStream();
+                    String symbol = inbound.readLine();
 
-                String symbol = inbound.readLine();
+                    //Generate a random stock price
+                    String price = (new Double(Math.random() * 100)).toString();
 
-                //Generate a random stock price
-                String price = (new Double(Math.random()*100)).toString();
+                    outbound.write(("\n The price of " + symbol + " is " + price + "\n").getBytes());
 
-                outbound.write(("\n The price of "+symbol+ " is " + price + "\n").getBytes());
-                System.out.println("Request for " + symbol + " has been processed - the price of " + symbol+
-                        " is " + price + "\n" );
-                outbound.write("End\n".getBytes());
+                    System.out.println("Request for " + symbol + " has been processed - the price of " + symbol +
+                            " is " + price + "\n");
+                    outbound.write("End\n".getBytes());
+
+                }
+                client.close();
             }
-        }
-        catch (IOException ioe) {
+        }catch (IOException ioe) {
             System.out.println("Error in Server: " + ioe);
-        } finally{
-            try{
-                inbound.close();
-                outbound.close();
-            }catch(Exception e){
-                System.out.println(
-                        "StockQuoteServer: can't close streams" + e.getMessage());
-            }
         }
     }
 }

@@ -19,7 +19,7 @@ public class Client {
         Socket clientSocket = null;
         try{
             // Open a client socket connection
-            clientSocket = new Socket("localhost", 3000);
+            clientSocket = new Socket("localhost", 3001);
 
             System.out.println("Client: " + clientSocket);
         }catch (UnknownHostException uhe){
@@ -29,7 +29,7 @@ public class Client {
         }
 
         try (OutputStream outbound = clientSocket.getOutputStream();
-             BufferedReader inbound = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); ){
+             BufferedReader inbound = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())) ){
 
             // Send stock symbol to the server
             outbound.write((args[0]+"\n").getBytes());
