@@ -1,76 +1,84 @@
 package ru.fearofcode.learn.network.socket.chat;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 /**
  * Created by maks on 6/25/2017.
  */
-public class Client implements Runnable{
-    private Socket serverSocket;
-    private Thread listenerServerSocket = new Thread(this);
+public class Client {
+    private Socket socket;
+    private Repeater repeater;
 
-    public void connectToServer(){
+    private BufferedReader in;
+    private PrintWriter out;
+
+
+    public Client() {
+        Scanner scan = new Scanner(System.in);
+
         try {
-            serverSocket = new Socket(Settings.ipAddressServer, Settings.portServer);
+            socket = new Socket(Settings.ipAddressServer, Settings.portServer);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(socket.getOutputStream(), true);
 
-            try (
-                DataInputStream dataInputStream = new DataInputStream(serverSocket.getInputStream())
-            ) {
-                //Receiving a old messages.
-                int sizeMessages = dataInputStream.readInt();
-                for (int i = 0; i < sizeMessages; i ++) {
-                    String oldMess = dataInputStream.readUTF();
-                    System.out.println(oldMess);
-                }
+            System.out.println("Please enter your nik name.");
+            out.println(scan.nextLine());
 
-                //Listens server socket
-                listenerServerSocket.start();
+            repeater = new Repeater();
+            repeater.start();
 
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-                while(true){
-                    String newMessage = bufferedReader.readLine();
-                    try(
-                        DataOutputStream dataOutputStream = new DataOutputStream(serverSocket.getOutputStream());
-                    ) {
-                        dataOutputStream.writeUTF(newMessage);
-                        dataOutputStream.flush();
-                    }catch(Exception e){
-                        System.out.println("I couldn't send my new message");
-                        e.printStackTrace();
-                    }
-                }
+            String newMessage = "";
+            while(!"exit".equals(newMessage)){
+                newMessage = scan.nextLine();
+                out.println(newMessage);
             }
-
-        }catch(Exception e){
-            System.out.println("Error in client: "+ e.getMessage());
+        }catch(IOException e){
             e.printStackTrace();
+        }finally{
+            close();
         }
+
 
     }
 
-    /**
-     * This thread listens on server socket for a new message from another clients.
-     */
-    @Override
-    public void run() {
-        try(
-            DataInputStream dataInputStream = new DataInputStream(serverSocket.getInputStream());
-        ){
-            String newMessage = dataInputStream.readUTF();
-            System.out.println(newMessage);
-        }catch(Exception e){
-            System.out.println("I couldn't listens server socket: " + e.getMessage());
-            e.printStackTrace();
+    private void close() {
+        try{
+            repeater.setStop();
+            in.close();
+            out.close();
+            socket.close();
+        }catch(IOException e){
+            System.err.println("Couldn't closed connection with server");
+        }
+    }
+
+    private class Repeater extends Thread{
+        private boolean stop = false;
+
+        public void setStop() {
+            stop = true;
+        }
+
+        @Override
+        public void run(){
+            try {
+                while (!stop) {
+                    String newMessage = in.readLine();
+                    System.out.println(newMessage);
+                }
+            }catch(IOException e){
+                System.err.println("Couldn't get message");
+                e.printStackTrace();
+            }
         }
     }
 
     public static void main(String[] args) {
         Client client = new Client();
-        client.connectToServer();
     }
-
 }

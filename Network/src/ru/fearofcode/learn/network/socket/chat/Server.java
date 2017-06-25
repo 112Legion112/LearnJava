@@ -1,8 +1,6 @@
 package ru.fearofcode.learn.network.socket.chat;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
@@ -12,41 +10,20 @@ import java.util.List;
  * Created by maks on 6/25/2017.
  */
 public class Server {
-    private final List<Socket> clients = new LinkedList<>();
-    private final List<String> messages = new LinkedList<>();
+    private final List<Connection> connections = new LinkedList<>();
     private ServerSocket serverSocket;
 
 
-    public void start() {
+    public Server() {
         try {
-            messages.add("It is first test message");
             serverSocket = new ServerSocket(Settings.portServer);
 
 
             while (true) {
-                Socket client = serverSocket.accept();
-                newConnect(client);
-                clients.add(client);
-
-                /**
-                 * This Thread listens socket of client.
-                 */
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try (
-                            DataInputStream dataInputStream = new DataInputStream(client.getInputStream())
-                        ) {
-                            while(true){
-                                String newMessage = dataInputStream.readUTF();
-                                newMessage(client, newMessage);
-                            }
-                        } catch (Exception e) {
-                            System.out.println("Error in client: " + e.getMessage());
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
+                Socket socket = serverSocket.accept();
+                Connection connection = new Connection(socket);
+                connections.add(connection);
+                connection.start();
             }
 
 
@@ -56,52 +33,83 @@ public class Server {
         }
     }
 
+    private class Connection extends Thread {
+        private Socket socket;
+        private BufferedReader in;
+        private PrintWriter out;
+
+        private String name = "";
 
 
-    /**
-     * This method send all old messages to new client.
-     */
-    private void newConnect(Socket client){
-        try(
-            DataOutputStream dataOutputStream = new DataOutputStream(client.getOutputStream());
-        ){
-            int size = messages.size();
-            dataOutputStream.writeInt(size);
-            for (String mess : messages) {
-                dataOutputStream.writeUTF(mess);
+        public Connection(Socket socket){
+            this.socket = socket;
+
+            try {
+                in = new BufferedReader( new  InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
+
+            }catch(IOException e){
+                e.printStackTrace();
+                close();
             }
-            //dataOutputStream.flush();
-
-        }catch(Exception e){
-            System.out.println("I couldn't send all messages to new client");
         }
-    }
 
-    /**
-     * This method  send a new message from the client to all of clients other than this client.
-     * @param from - from new message;
-     * @param newMessage - new message :)
-     */
-    private void newMessage(Socket from, String newMessage){
-        newMessage = from.getPort() + ": " + newMessage;
-        for (Socket client : clients) {
-            if (client != from){
-                try(
-                    DataOutputStream dataOutputStream = new DataOutputStream(client.getOutputStream());
-                ){
-                    dataOutputStream.writeUTF(newMessage);
-                    dataOutputStream.flush();
-                }catch(Exception e){
-                    System.out.println("I couldn't send new message this Client: " +client);
-                    e.printStackTrace();
+
+
+
+        @Override
+        public void run(){
+            try {
+
+                name = in.readLine();
+                //I don't know, why this need synchronized maybe object "Iterator not like multithreading".
+                synchronized (connections) {
+                    for (Connection connection : connections) {
+                        connection.out.println(name + "came now");
+                    }
                 }
+                String newMessage;
+                while (true) {
+                    newMessage = in.readLine();
+                    if ("exit".equals(newMessage)) break;
+
+                    synchronized(connections){
+                        for (Connection connection : connections){
+                            connection.out.println(name + ": " + newMessage);
+                        }
+                    }
+                }
+                synchronized(connections){
+                    for (Connection connection : connections){
+                        connection.out.println(name + " has left");
+                    }
+                }
+
+            }catch(IOException e){
+                e.printStackTrace();
+            }finally{
+                close();
+            }
+
+        }
+
+
+
+
+        public void close(){
+            try {
+                in.close();
+                out.close();
+                socket.close();
+
+                connections.remove(this);
+            } catch (Exception e) {
+                System.err.println("Can't close connection");
             }
         }
-        messages.add(newMessage);
     }
 
     public static void main(String[] args) {
         Server server = new Server();
-        server.start();
     }
 }
